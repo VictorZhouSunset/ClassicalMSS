@@ -1,0 +1,15 @@
+# Input settings (what files to process):
+sample_rates: [16000,22050,44100,48000]
+
+raw_to_training:
+  start_index: 0
+  end_index: 3000
+
+# Output settings:
+target_duration: 5.0
+output_mono: True
+target_db: -15 # Target RMS level in dB, a target of -15dB can make the LUFS value of the mix be around under -14dB, which is the standard for YouTube videos
+threshold_db: -24 # Compression threshold in dB
+
+#General settings:
+silence_threshold: 0.001 # In a float32 format, silence is defined as a value less than this threshold (for trim_or_pad function)

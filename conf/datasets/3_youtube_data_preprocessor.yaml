@@ -1,0 +1,11 @@
+segmentation:
+  segment_length_seconds: 5.0
+  segment_window_interval_seconds: 2.5
+
+
+output_mono: True
+
+target_sr: [16000, 22050, 44100, 48000]
+
+silence_threshold_db: -60
+max_silence_proportion: 0.2

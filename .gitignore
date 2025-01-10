@@ -161,5 +161,8 @@ cython_debug/
 
 ClassicalMSS/soundfonts/
 ClassicalMSS/soundfonts/FluidR3_GM/
-datasets/
-!datasets/README.md
+datasets/1_midi_generated/
+datasets/2_augmented/
+datasets/3_youtube_test/
+datasets/4_live_duos/
+datasets/5_recordings/

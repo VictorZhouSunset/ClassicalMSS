@@ -1,0 +1,91 @@
+# General parameters
+max_attempts: 10000 # There will be a "IndexError: pop from empty list" which seems to be related with the note-on/note-off events
+                # I just ignore it here and try another attempt
+number_of_midi_generations: 3000
+random_seed: 715 # Set the random seed to ensure reproducibility
+
+# Basic MIDI generation parameters
+duration:
+  max_seconds: 5
+
+# Instrument configurations
+instruments:
+  piano:
+    range: [21, 108] # The midi range of the piano
+    program: 0 # The midi program number for the piano
+    voice_range_width: 24 # The range of any single voice (in a chord window) of the piano
+    rest_poss: 0.1 # The probability of a note to be a rest in the piano
+    legato_poss: 0.5 # The probability of a note to be a legato note in the piano
+  violin:
+    range: [55, 100] # The midi range of the violin
+    program: 40 # The midi program number for the violin
+    voice_range_width: 24 # The range of any single voice (in a chord window) of the violin
+    rest_poss: 0.1 # The probability of a note to be a rest in the violin
+    legato_poss: 0.5 # The probability of a note to be a legato note in the violin
+  cello:
+    range: [36, 84] # The midi range of the cello
+    program: 41 # The midi program number for the cello
+    voice_range_width: 24 # The range of any single voice (in a chord window) of the cello
+    rest_poss: 0.1 # The probability of a note to be a rest in the cello
+    legato_poss: 0.5 # The probability of a note to be a legato note in the cello
+  flute:
+    range: [60, 96] # The midi range of the flute
+    program: 73 # The midi program number for the flute
+    voice_range_width: 24 # The range of any single voice (in a chord window) of the flute
+    rest_poss: 0.1 # The probability of a note to be a rest in the flute
+    legato_poss: 0.5 # The probability of a note to be a legato note in the flute
+
+# Musical parameters
+tempo:
+  min: 72
+  max: 144
+
+time_signatures:
+  options: [[3, 4], [4, 4], [5, 4]]
+  weights: [0.45, 0.45, 0.10]
+
+# Chord generation parameters
+chord_probabilities:
+  I: 0.28
+  II: 0.10
+  III: 0.05
+  IV: 0.18
+  V: 0.24
+  VI: 0.10
+  VII: 0.05
+
+chord_type_probabilities:
+  triad: 0.70
+  seventh: 0.20
+  ninth: 0.06
+  eleventh: 0.03
+  thirteenth: 0.01
+
+# The probability for a "chord window start point" to be on any non-first beat
+## The higher it is, the shorter a chord window would be
+chord_window_start_probability: 0.4
+
+# The velocity range for the first note (inclusive)
+first_note_velocity: 
+  min: 55
+  max: 110
+
+# The velocity range for the whole segment (inclusive)
+velocity_range:
+  min: 30
+  max: 115
+
+# Generation parameters
+melody:
+  pitch_temp: 4 # A lower temperature means the next note is more likely to be in the vicinity of the current note
+  stick_to_chord: 70 # The higher it is, the more likely the notes are to be in the choosen chord
+  velocity_temp: 4 # A lower temperature means the next note's velocity is more likely to be in the vicinity of the current note's velocity
+  legato_level: 0.1 # The overlap for two legato notes
+
+pedal:
+  probability: 0.7
+  bias: 0.125
+
+# whole, half, quarter, 8th, 16th notes
+available_durations: [4, 2, 1, 0.5, 0.25]
+
