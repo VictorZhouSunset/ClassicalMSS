@@ -1,0 +1,97 @@
+# Copyright (c) Victor Zhou
+# All rights reserved.
+#
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+
+ClassicalMSS/
+├── ClassicalMSS/         # Main package directory
+    ├── __init__.py       # Package initialization, version info
+    ├── __main__.py       # Entry point for running as module
+    ├── datasets_processing/  # Subpackage for dataset-related scripts, numbered for stages of development
+        ├── __init__.py
+        ├── 1_midi_generator.py  # Random MIDI and soundfont rendering
+        ├── 1_midi_renderer.py   # MIDI rendering with soundfont,including batch processing
+        ├── 1_raw_to_training.py  # Convert raw audio to training dataset
+        ├── 2_augmentations.py   # Reverbs/EQs and dataset diversification for MIDI-generated data
+        ├── 3_youtube_data_handler.py  # Handling YouTube piano/violin solo mixes
+        ├── 4_recording_data_handler.py  # Handling manually recorded data and mixes
+        ├── 5_empirical_youtube_data_handler.py  # Handling YouTube piano/violin duos
+        ├── Utils_audio_inspector.py  # Inspect .wav files
+        ├── Utils_dataset_splitter.py  # Helper for customized train/test splits if needed
+        └── Utils_preprocessing.py   # Preprocessing for all data types (e.g., wavs)
+    ├── models/     # Different models implementation and model-wise utilities
+        ├── __init__.py
+        ├── conv_tasnet.py  # Conv-TasNet model
+        ├── demucs.py  # Demucs model
+        ├── htdemucs.py  # HT-Demucs model
+        ├── model_modules.py  # Specific modules for reuse across models
+        ├── model_utils.py  # Model utilities (e.g., center trimming, custom layers)
+        └── wave_u_net.py  # Wave U-Net model
+    ├── scripts/           # Executable scripts
+        ├── __init__.py
+        ├── evaluate.py     # Evaluating a separation using metrics such as SDR
+        ├── train.py        # Training a model
+        ├── separate.py     # Separating a mix using a dictionary
+        └── solver.py       # The main training loop for this project
+    ├── soundfonts/        # Soundfonts for MIDI rendering
+        ├── FluidR3_GM/
+            └── FluidR3_GM.sf2
+    └── utils/            # Subpackage for general utilities
+        ├── __init__.py
+        ├── audio_utils.py  # Audio-specific utilities (e.g., loading WAVs)
+        ├── file_utils.py   # Functions for handling file paths, directories
+        ├── logging_utils.py  # Custom logging functions
+        ├── midi_utils.py   # MIDI-specific utility functions like rendering and checking
+        └── wave_loader.py  # Loading WAV files for training and testing
+├── conf/                # Configuration files
+    ├── __init__.py
+    ├── config.yaml       # General project settings
+    └── datasets/          # Dataset-specific configurations
+        ├── augment.yaml   # Reverb/EQ parameters
+        ├── 1_midi_generator.yaml      # MIDI generation settings
+        ├── 1_midi_renderer.yaml      # MIDI rendering settings
+        ├── 1_raw_to_training.yaml    # Raw audio to training dataset settings
+        └── splits.yaml    # Train/test split definitions
+├── datasets/                  # Local datasets (excluded from version control)
+    ├── 1_midi_generated/   # MIDI generated dataset
+        ├── audio_dataset/  # Audio dataset
+        └── raw/             # Raw midi and audio files to create the dataset
+            ├── midi/
+            └── raw_audio/
+    ├── 2_augmented/        # Diversified dataset with reverbs/EQs
+    ├── 3_youtube_test/     # Downloaded YouTube test data
+        ├── audio_dataset/  # Audio dataset
+        └── raw/             # Raw and intermediate audio files from YouTube
+            ├── processed_violin/
+            ├── processed_piano/
+            └── YouTube_original/
+                ├── piano/
+                └── violin/
+    ├── 4_live_duos/       # Manually recorded piano/violin dataset
+    ├── 5_recordings/        # Real live recordings for empirical testing
+    └── README.md         # Datasets overview
+├── docs/                  # Documentation
+    ├── api_reference.md  # API reference for scripts and modules
+    └── data_workflow.md  # Documentation on dataset handling
+├── separations/           # Separations using different models
+    ├── conv_tasnet/
+    ├── demucs/
+    ├── htdemucs/
+    └── wave_u_net/
+├── tests/                 # Test files
+    ├── __init__.py
+    ├── audio_dataset_summarizer.py # Summarize an audio dataset on its audio properties distribution
+    ├── test_data.py        # Tests for data-processing scripts
+    ├── test_models.py       # Unit tests for the models
+    └── test_utils.py       # Tests for utilities
+├── tools/                 # Utility scripts
+    ├── __init__.py
+    ├── dataset_summarizer.py   # Summarize or validate datasets
+    ├── dataset_uploader.py  # Upload datasets to platforms when needed
+    └── other_utils.py       # Miscellaneous helper functions
+├── setup.py              # Package installation setup
+├── project_structure.txt  # Core project structure (This file)
+├── LICENSE               # License
+├── requirements.txt      # Dependencies
+└── README.md             # Project overview

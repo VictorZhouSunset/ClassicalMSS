@@ -1,0 +1,10 @@
+svd:  # see svd.py for documentation
+  penalty: 0 # 0 means 'not enabled'
+  min_size: 0.1
+  dim: 1
+  num_iters: 2
+  power_method: false # When batch size are small, it is better to use power_method=false
+  proba: 1
+  conv_only: false
+  convtr: false
+  bs: 1
