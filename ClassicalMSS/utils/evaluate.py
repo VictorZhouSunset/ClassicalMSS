@@ -68,18 +68,18 @@ def evaluate(solver, compute_sdr=False):
                 mix = mix[None]
             mix = mix.to(solver.device)
             ref = mix.mean(dim=0)  # mono mixture
-            mix = (mix - ref.mean()) / ref.std()
+            mix = (mix - ref.mean()) / ref.std() # Normalize the mix to have a better estimate
             mix = convert_audio(mix, src_rate, model.samplerate, model.audio_channels)
             estimates = apply_model(model, mix[None],
                                     shifts=args.test.shifts, split=args.test.split,
                                     overlap=args.test.overlap)[0]
-            estimates = estimates * ref.std() + ref.mean()
+            estimates = estimates * ref.std() + ref.mean() # Denormalize the estimates
             estimates = estimates.to(eval_device)
 
             references = th.stack(
                 [th.from_numpy(track.targets[name].audio).t() for name in model.sources])
-            if references.dim() == 2:
-                references = references[:, None]
+            if references.dim() == 2: # If the ref is mono
+                references = references[:, None] # Add a dimension at place 1
             references = references.to(eval_device)
             references = convert_audio(references, src_rate,
                                        model.samplerate, model.audio_channels)
@@ -89,6 +89,7 @@ def evaluate(solver, compute_sdr=False):
                 for name, estimate in zip(model.sources, estimates):
                     save_audio(estimate.cpu(), folder / (name + ".mp3"), model.samplerate)
 
+            # "start evaluating this track in the background and I'll check the results later"
             pendings.append((track.name, pool.submit(
                 eval_track, references, estimates, win=win, hop=hop, compute_sdr=compute_sdr)))
 
