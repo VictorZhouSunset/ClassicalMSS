@@ -25,6 +25,57 @@ from .utils import DummyPoolExecutor
 
 logger = logging.getLogger(__name__)
 
+def new_sdr(references, estimates):
+    """
+    Compute the SDR according to the MDX challenge definition.
+    Adapted from AIcrowd/music-demixing-challenge-starter-kit (MIT license)
+    """
+    assert references.dim() == 4
+    assert estimates.dim() == 4
+    delta = 1e-7  # avoid numerical errors
+    num = th.sum(th.square(references), dim=(2, 3))
+    den = th.sum(th.square(references - estimates), dim=(2, 3))
+    num += delta
+    den += delta
+    scores = 10 * th.log10(num / den)
+    return scores
+
+def eval_track(references, estimates, win, hop, compute_sdr=True):
+    # Shape of the references/estimates input should be (sources, channels, samples), transpose to (sources, samples, channels)
+    references = references.transpose(1, 2).double()
+    estimates = estimates.transpose(1, 2).double()
+
+    # The new_sdr function expects a shape of (batch_size, sources, samples, channels), so we add a dimension "1" at place 0
+    # The new_sdr function returns a shape of (batch_size, sources), since we only have one batch, we take the sources' dimension
+    new_sdr_scores = new_sdr(references.cpu()[None], estimates.cpu()[None])[0]
+
+    if not compute_sdr:
+        return None, new_sdr_scores
+    else:
+        references = references.numpy()
+        estimates = estimates.numpy()
+        # museval.metrics.bss_eval() (Blind Source Separation Evaluation) returns a tuple of:
+        # 1. SDR (Signal to Distortion Ratio)
+        # 2. ISR (Image to Spatial distortion Ratio)
+        # 3. SIR (Signal to Interference Ratio)
+        # 4. SAR (Signal to Artifacts Ratio)
+        # 5. A permutation array (Only needed when using Permutation Invariant Training, PIT, but here the order of the sources is fixed)
+        # So we don't need the last element of the returned tuple
+        scores = museval.metrics.bss_eval(
+            references, estimates,
+            compute_permutation=False,
+            window=win,
+            hop=hop,
+            # "framewise_filters" compute different filter coefficients (which is used to determine the portion of the reference that is in the estimate)
+            # for each frame (window). This will make the calculation less stable and slower, so is generally set to False in MSS evaluation
+            framewise_filters=False,
+            bsseval_sources_version=False # Uses the newer BSS Eval v4 instead of the older BSS Eval Sources version
+        )[:-1]
+        # new_sdr_scores is a shape of (sources), while scores is a shape of (4, sources, windows)
+        # 4 is the number of metrics (SDR, ISR, SIR, SAR)
+        return scores, new_sdr_scores
+
+
 def evaluate(solver, compute_sdr=False):
     """
     Evaluate model using museval.
@@ -76,6 +127,7 @@ def evaluate(solver, compute_sdr=False):
             estimates = estimates * ref.std() + ref.mean() # Denormalize the estimates
             estimates = estimates.to(eval_device)
 
+            # Shape of the references should be (sources, channels, samples)
             references = th.stack(
                 [th.from_numpy(track.targets[name].audio).t() for name in model.sources])
             if references.dim() == 2: # If the ref is mono
@@ -90,15 +142,18 @@ def evaluate(solver, compute_sdr=False):
                     save_audio(estimate.cpu(), folder / (name + ".mp3"), model.samplerate)
 
             # "start evaluating this track in the background and I'll check the results later"
-            pendings.append((track.name, pool.submit(
+            # pool.submit takes a function (eval_track) and its arguments, and schedules it to run in a separate process
+            # It returns a Future object that is stored along with the track name
+            # Future.result() will get the actual results when they are ready
+            pendings.append((track.name, pool.submit( 
                 eval_track, references, estimates, win=win, hop=hop, compute_sdr=compute_sdr)))
 
         pendings = LogProgress(logger, pendings, updates=args.misc.num_prints,
-                               name='Eval (BSS)')
+                               name='Eval (BSS)') # Blind Source Separation
         tracks = {}
         for track_name, pending in pendings:
             pending = pending.result()
-            scores, nsdrs = pending
+            scores, nsdrs = pending # nsdrs stands for "new SDRs" which is the SDR computed by the new_sdr function (the MDX challenge definition)
             tracks[track_name] = {}
             for idx, target in enumerate(model.sources):
                 tracks[track_name][target] = {'nsdr': [float(nsdrs[idx])]}
@@ -113,25 +168,24 @@ def evaluate(solver, compute_sdr=False):
                     }
                     tracks[track_name][target].update(values)
 
-        all_tracks = {}
-        for src in range(distrib.world_size):
-            all_tracks.update(distrib.share(tracks, src))
+        # No distributed training yet
+        all_tracks = tracks
 
         result = {}
-        metric_names = next(iter(all_tracks.values()))[model.sources[0]]
+        metric_names = next(iter(all_tracks.values()))[model.sources[0]] # It is only used to get the metric names (Since every track/soureces has the same metrics)
         for metric_name in metric_names:
             avg = 0
             avg_of_medians = 0
             for source in model.sources:
                 medians = [
-                    np.nanmedian(all_tracks[track][source][metric_name])
+                    np.nanmedian(all_tracks[track][source][metric_name]) # Median across all windows of the same track
                     for track in all_tracks.keys()]
-                mean = np.mean(medians)
-                median = np.median(medians)
+                mean = np.mean(medians) # Mean across all tracks
+                median = np.median(medians) # Median across all tracks
                 result[metric_name.lower() + "_" + source] = mean
-                result[metric_name.lower() + "_med" + "_" + source] = median
-                avg += mean / len(model.sources)
-                avg_of_medians += median / len(model.sources)
+                result[metric_name.lower() + "_med_" + source] = median
+                avg += mean / len(model.sources) # Mean across all sources
+                avg_of_medians += median / len(model.sources) # Mean of median across all sources
             result[metric_name.lower()] = avg
             result[metric_name.lower() + "_med"] = avg_of_medians
         return result
